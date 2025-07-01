@@ -1,18 +1,21 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
 // 🔧 Agrega servicios necesarios
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// ✅ Política CORS específica para Vercel
 builder.Services.AddCors(options =>
 {
-	options.AddPolicy("PermitirTodo", policy =>
+	options.AddPolicy("PermitirVercel", policy =>
 	{
-		policy.AllowAnyOrigin()
+		policy.WithOrigins("https://app-proyecto-chi.vercel.app")
 			  .AllowAnyMethod()
 			  .AllowAnyHeader();
 	});
 });
+
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
@@ -25,15 +28,11 @@ if (app.Environment.IsDevelopment())
 }
 
 // ✅ Aplica CORS
-app.UseCors("PermitirTodo");
+app.UseCors("PermitirVercel");
 
-// ✅ Habilita archivos estáticos (wwwroot incluido)
-app.UseStaticFiles(); // Esto sirve wwwroot por defecto
-
-// ✅ Autorización (si la usas)
+// ✅ Archivos estáticos y middlewares
+app.UseStaticFiles();
 app.UseAuthorization();
-
-// ✅ Mapea los controladores
 app.MapControllers();
 
 app.Run();
