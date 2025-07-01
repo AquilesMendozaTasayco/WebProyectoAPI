@@ -11,7 +11,7 @@ WORKDIR /src
 COPY ["WebProyectoAPI/WebProyectoAPI.csproj", "WebProyectoAPI/"]
 RUN dotnet restore "WebProyectoAPI/WebProyectoAPI.csproj"
 
-# Copiar el resto del código y compilar
+# Copiar el resto del cÃ³digo y compilar
 COPY . .
 WORKDIR "/src/WebProyectoAPI"
 RUN dotnet build "WebProyectoAPI.csproj" -c Release -o /app/build
