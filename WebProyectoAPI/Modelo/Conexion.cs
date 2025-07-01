@@ -6,15 +6,10 @@ namespace WebProyectoAPI.Modelo
     {
         protected MySqlConnection _cnx = null;
 
+        string cadena = "server=turntable.proxy.rlwy.net;port=42741;database=railway;user=root;password=DblCzMgeLDTsNnjQCpkJuLtMJizUwmvL;SslMode=None;";
+
         public Conexion()
         {
-            string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-
-            if (string.IsNullOrEmpty(cadena))
-            {
-                throw new Exception("La variable CONNECTION_STRING no está configurada.");
-            }
-
             _cnx = new MySqlConnection(cadena);
         }
     }
