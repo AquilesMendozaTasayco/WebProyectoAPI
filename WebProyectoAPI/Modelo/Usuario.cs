@@ -40,7 +40,7 @@ namespace WebProyectoAPI
 		}
 
 
-		public List<Usuario> Listar()
+        public List<Usuario> Listar()
         {
             try
             {
@@ -59,7 +59,8 @@ namespace WebProyectoAPI
                         Nombre = leer["Nombre"].ToString(),
                         Correo = leer["Correo"].ToString(),
                         Password = leer["Password"].ToString(),
-                        Rol = leer["Rol"].ToString()
+                        Rol = leer["Rol"].ToString(),
+                        FotoPerfil = leer["FotoPerfil"]?.ToString() ?? ""
                     };
                     lista.Add(usuario);
                 }
@@ -75,6 +76,49 @@ namespace WebProyectoAPI
                 _cnx.Close();
             }
         }
+        public bool EliminarFotoPerfil(int idUsuario)
+        {
+            try
+            {
+                // Buscar nombre del archivo
+                string? nombreArchivo = "";
+
+                using (MySqlCommand cmdBuscar = new MySqlCommand("SELECT FotoPerfil FROM Usuario WHERE IdUsuario = @id", _cnx))
+                {
+                    cmdBuscar.Parameters.AddWithValue("@id", idUsuario);
+                    _cnx.Open();
+                    var resultado = cmdBuscar.ExecuteScalar();
+                    nombreArchivo = resultado?.ToString();
+                    _cnx.Close();
+                }
+
+                // Eliminar archivo del disco
+                if (!string.IsNullOrEmpty(nombreArchivo))
+                {
+                    string ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", nombreArchivo);
+                    if (System.IO.File.Exists(ruta))
+                        System.IO.File.Delete(ruta);
+                }
+
+                // Limpiar campo en la BD
+                using (MySqlCommand cmdLimpiar = new MySqlCommand("UPDATE Usuario SET FotoPerfil = NULL WHERE IdUsuario = @id", _cnx))
+                {
+                    cmdLimpiar.Parameters.AddWithValue("@id", idUsuario);
+                    _cnx.Open();
+                    return cmdLimpiar.ExecuteNonQuery() > 0;
+                }
+            }
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                if (_cnx.State == ConnectionState.Open)
+                    _cnx.Close();
+            }
+        }
+
 
         public bool Agregar()
         {

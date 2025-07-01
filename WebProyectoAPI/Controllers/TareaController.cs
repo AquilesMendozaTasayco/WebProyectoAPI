@@ -58,6 +58,14 @@ namespace WebProyectoAPI.Controllers
             return Ok(lista);
         }
 
+        [HttpGet("listarPorLider/{idLider}")]
+        public IActionResult ListarPorLider(int idLider)
+        {
+            var modelo = new Tarea();
+            return Ok(modelo.ListarPorLider(idLider));
+        }
+
+
 
 
         // ? Actualizar tarea

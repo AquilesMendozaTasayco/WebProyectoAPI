@@ -253,5 +253,42 @@ namespace WebProyectoAPI
                 _cnx.Close();
             }
         }
+
+        public List<Tarea> ListarPorLider(int idLider)
+        {
+            List<Tarea> lista = new List<Tarea>();
+            try
+            {
+                using var comando = new MySqlCommand("sp_ListarTareasPorLider", _cnx);
+                comando.CommandType = CommandType.StoredProcedure;
+                comando.Parameters.AddWithValue("@p_IdLider", idLider);
+                _cnx.Open();
+
+                using var reader = comando.ExecuteReader();
+                while (reader.Read())
+                {
+                    lista.Add(new Tarea
+                    {
+                        IdTarea = Convert.ToInt32(reader["IdTarea"]),
+                        TituloTarea = reader["TituloTarea"].ToString(),
+                        Descripcion = reader["Descripcion"].ToString(),
+                        Prioridad = reader["Prioridad"].ToString(),
+                        FechaLimite = Convert.ToDateTime(reader["FechaLimite"]),
+                        Estado = reader["Estado"].ToString(),
+                        IdProyecto = Convert.ToInt32(reader["IdProyecto"]),
+                        IdUsuario = Convert.ToInt32(reader["IdUsuario"]),
+                        NombreUsuarioAsignado = reader["NombreUsuarioAsignado"].ToString(),
+                        NombreProyecto = reader["NombreProyecto"].ToString()
+                    });
+                }
+            }
+            finally
+            {
+                _cnx.Close();
+            }
+
+            return lista;
+        }
+
     }
 }

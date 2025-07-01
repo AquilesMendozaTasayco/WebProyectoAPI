@@ -1,14 +1,25 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using WebProyectoAPI;
+using WebProyectoAPI.Modelo;
 
 namespace WebProyectoAPI.Controllers
 {
-	[ApiController]
-	[Route("[controller]")]
-	public class UsuarioController : ControllerBase
-	{
-
-        //USUARIO
+    [ApiController]
+    [Route("[controller]")]
+    public class UsuarioController : ControllerBase
+    {
+        // Modelo para cambiar contraseña
+        public class CambioClaveRequest
+        {
+            public int IdUsuario { get; set; }
+            public string NuevaClave { get; set; } = "";
+        }
 
         [HttpGet("BuscarUsuarios")]
         public IActionResult BuscarUsuarios([FromQuery] string filtro)
@@ -19,15 +30,12 @@ namespace WebProyectoAPI.Controllers
         }
 
         [HttpPut("CambiarClave")]
-        public IActionResult CambiarClave([FromBody] dynamic datos)
+        public IActionResult CambiarClave([FromBody] CambioClaveRequest datos)
         {
             try
             {
-                int idUsuario = datos.idUsuario;
-                string nuevaClave = datos.nuevaClave;
-
                 var usuario = new Usuario();
-                bool actualizado = usuario.CambiarClave(idUsuario, nuevaClave);
+                bool actualizado = usuario.CambiarClave(datos.IdUsuario, datos.NuevaClave);
 
                 if (actualizado)
                     return Ok(new { mensaje = "Contraseña actualizada correctamente" });
@@ -40,130 +48,120 @@ namespace WebProyectoAPI.Controllers
             }
         }
 
-
         [HttpPost("Login")]
-		public IActionResult Login([FromBody] Usuario loginRequest)
-		{
-			Console.WriteLine("🟡 Intentando login...");
-			Console.WriteLine("Correo recibido: " + loginRequest.Correo);
-			Console.WriteLine("Password recibido: " + loginRequest.Password);
+        public IActionResult Login([FromBody] Usuario loginRequest)
+        {
+            var usuarios = new Usuario().Listar();
 
-			var usuarios = new Usuario().Listar();
+            foreach (var u in usuarios)
+            {
+                if (u.Correo == loginRequest.Correo)
+                {
+                    bool contraseñaOk = BCrypt.Net.BCrypt.Verify(loginRequest.Password, u.Password);
+                    if (contraseñaOk)
+                    {
+                        return Ok(new
+                        {
+                            mensaje = "Login exitoso",
+                            idUsuario = u.IdUsuario,
+                            nombre = u.Nombre,
+                            correo = u.Correo,
+                            rol = u.Rol,
+                            fotoPerfil = string.IsNullOrEmpty(u.FotoPerfil)
+                                ? null
+                                : $"http://localhost:5155/uploads/{u.FotoPerfil}"
+                        });
+                    }
+                }
+            }
 
-			bool correoEncontrado = false;
-			bool passwordCorrecta = false;
+            return Unauthorized(new { mensaje = "Correo o contraseña incorrectos" });
+        }
 
-			foreach (var u in usuarios)
-			{
-				Console.WriteLine($"→ Usuario en BD: {u.Correo}");
+        [HttpGet("ExisteCorreo")]
+        public IActionResult ExisteCorreo(string correo)
+        {
+            var usuarios = new Usuario().Listar();
+            var existe = usuarios.Any(u => u.Correo == correo);
+            return Ok(new { existe });
+        }
 
-				if (u.Correo == loginRequest.Correo)
-				{
-					correoEncontrado = true;
-					Console.WriteLine("✓ Correo coincide");
+        [HttpGet("ListarUsuario")]
+        public IEnumerable<Usuario> ListarUsuario()
+        {
+            return new Usuario().Listar();
+        }
 
-					// Verificamos la contraseña encriptada
-					bool contraseñaOk = BCrypt.Net.BCrypt.Verify(loginRequest.Password, u.Password);
-					Console.WriteLine($"✓ ¿Contraseña correcta? → {contraseñaOk}");
+        [HttpPost("AgregarUsuario")]
+        public IActionResult AgregarUsuario([FromBody] Usuario usuario)
+        {
+            if (usuario.Agregar())
+                return Ok(new { mensaje = "Usuario agregado correctamente" });
+            else
+                return BadRequest(new { mensaje = "Error al agregar usuario" });
+        }
 
-					if (contraseñaOk)
-					{
-						passwordCorrecta = true;
+        [HttpPut("ActualizarUsuario")]
+        public IActionResult ActualizarUsuario([FromBody] Usuario usuario)
+        {
+            if (usuario.Actualizar())
+                return Ok(new { mensaje = "Usuario actualizado correctamente" });
+            else
+                return BadRequest(new { mensaje = "Error al actualizar usuario" });
+        }
 
-						Console.WriteLine("✅ Login exitoso");
-						return Ok(new
-						{
-							mensaje = "Login exitoso",
-							idUsuario = u.IdUsuario,
-							nombre = u.Nombre,
-							correo = u.Correo,
-							rol = u.Rol,
-							fotoPerfil = string.IsNullOrEmpty(u.FotoPerfil)
-								? null
-								: $"http://localhost:5155/uploads/{u.FotoPerfil}"
-						});
+        [HttpDelete("EliminarUsuario/{id}")]
+        public IActionResult EliminarUsuario(int id)
+        {
+            Usuario usuario = new Usuario();
+            if (usuario.Eliminar(id))
+                return Ok(new { mensaje = "Usuario eliminado correctamente" });
+            else
+                return BadRequest(new { mensaje = "Error al eliminar usuario" });
+        }
 
+        [HttpPost("SubirFoto")]
+        public async Task<IActionResult> SubirFoto([FromForm] IFormFile archivo, [FromForm] int idUsuario)
+        {
+            if (archivo == null || archivo.Length == 0)
+                return BadRequest(new { mensaje = "Archivo inválido" });
 
-					}
-				}
-			}
+            string carpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            if (!Directory.Exists(carpeta)) Directory.CreateDirectory(carpeta);
 
-			Console.WriteLine("❌ Login fallido");
-			if (!correoEncontrado)
-				Console.WriteLine("✗ El correo no existe en la base de datos.");
-			else if (!passwordCorrecta)
-				Console.WriteLine("✗ La contraseña no coincide.");
+            string nombreArchivo = Guid.NewGuid() + Path.GetExtension(archivo.FileName);
+            string ruta = Path.Combine(carpeta, nombreArchivo);
 
-			return Unauthorized(new { mensaje = "Correo o contraseña incorrectos" });
-		}
+            using (var stream = new FileStream(ruta, FileMode.Create))
+            {
+                await archivo.CopyToAsync(stream);
+            }
 
+            Usuario usuario = new Usuario();
+            if (usuario.ActualizarFotoPerfil(idUsuario, nombreArchivo))
+                return Ok(new { mensaje = "Foto actualizada", nombreArchivo });
 
-		[HttpGet("ExisteCorreo")]
-		public IActionResult ExisteCorreo(string correo)
-		{
-			var usuarios = new Usuario().Listar();
-			var existe = usuarios.Any(u => u.Correo == correo);
-			return Ok(new { existe });
-		}
+            return BadRequest(new { mensaje = "No se pudo actualizar la foto" });
+        }
 
+        [HttpDelete("EliminarFoto/{idUsuario}")]
+        public IActionResult EliminarFoto(int idUsuario)
+        {
+            try
+            {
+                var usuario = new Usuario();
+                bool eliminado = usuario.EliminarFotoPerfil(idUsuario);
 
-		[HttpGet("ListarUsuario")]
-		public IEnumerable<Usuario> ListarUsuario()
-		{
-			return new Usuario().Listar();
-		}
+                if (eliminado)
+                    return Ok(new { mensaje = "Foto eliminada correctamente" });
+                else
+                    return BadRequest(new { mensaje = "No se pudo eliminar la foto" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { mensaje = "Error al eliminar la foto", error = ex.Message });
+            }
+        }
 
-		[HttpPost("AgregarUsuario")]
-		public IActionResult AgregarUsuario([FromBody] Usuario usuario)
-		{
-			if (usuario.Agregar())
-				return Ok(new { mensaje = "Usuario agregado correctamente" });
-			else
-				return BadRequest(new { mensaje = "Error al agregar usuario" });
-		}
-
-		[HttpPut("ActualizarUsuario")]
-		public IActionResult ActualizarUsuario([FromBody] Usuario usuario)
-		{
-			if (usuario.Actualizar())
-				return Ok(new { mensaje = "Usuario actualizado correctamente" });
-			else
-				return BadRequest(new { mensaje = "Error al actualizar usuario" });
-		}
-
-		[HttpDelete("EliminarUsuario/{id}")]
-		public IActionResult EliminarUsuario(int id)
-		{
-			Usuario usuario = new Usuario();
-			if (usuario.Eliminar(id))
-				return Ok(new { mensaje = "Usuario eliminado correctamente" });
-			else
-				return BadRequest(new { mensaje = "Error al eliminar usuario" });
-		}
-
-		[HttpPost("SubirFoto")]
-		public async Task<IActionResult> SubirFoto([FromForm] IFormFile archivo, [FromForm] int idUsuario)
-		{
-			if (archivo == null || archivo.Length == 0)
-				return BadRequest(new { mensaje = "Archivo inválido" });
-
-			string carpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-			if (!Directory.Exists(carpeta)) Directory.CreateDirectory(carpeta);
-
-			string nombreArchivo = Guid.NewGuid() + Path.GetExtension(archivo.FileName);
-			string ruta = Path.Combine(carpeta, nombreArchivo);
-
-			using (var stream = new FileStream(ruta, FileMode.Create))
-			{
-				await archivo.CopyToAsync(stream);
-			}
-
-			Usuario usuario = new Usuario();
-			if (usuario.ActualizarFotoPerfil(idUsuario, nombreArchivo))
-				return Ok(new { mensaje = "Foto actualizada", nombreArchivo });
-
-			return BadRequest(new { mensaje = "No se pudo actualizar" });
-		}
-
-	}
+    }
 }
