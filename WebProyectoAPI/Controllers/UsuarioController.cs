@@ -1,17 +1,17 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using WebProyectoAPI;
 using WebProyectoAPI.Modelo;
 
 namespace WebProyectoAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")] // ✅ Ruta clara: /api/usuario
     public class UsuarioController : ControllerBase
     {
         // Modelo para cambiar contraseña
@@ -20,25 +20,26 @@ namespace WebProyectoAPI.Controllers
             public int IdUsuario { get; set; }
             public string NuevaClave { get; set; } = "";
         }
-[HttpGet("test-connection")]
-public IActionResult TestConnection()
-{
-    try
-    {
-        // Lee la cadena de conexión desde la variable de entorno
-        string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
 
-        using (var cnx = new MySqlConnection(cadena))
+        // ✅ Test de conexión a Railway
+        [HttpGet("test-connection")]
+        public IActionResult TestConnection()
         {
-            cnx.Open();
-            return Ok("✅ Conexión a Railway MySQL exitosa.");
+            try
+            {
+                string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+                using (var cnx = new MySqlConnection(cadena))
+                {
+                    cnx.Open();
+                    return Ok("✅ Conexión a Railway MySQL exitosa.");
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"❌ Error al conectar: {ex.Message}");
+            }
         }
-    }
-    catch (Exception ex)
-    {
-        return BadRequest($"❌ Error al conectar: {ex.Message}");
-    }
-}
 
         [HttpGet("BuscarUsuarios")]
         public IActionResult BuscarUsuarios([FromQuery] string filtro)
@@ -88,7 +89,7 @@ public IActionResult TestConnection()
                             rol = u.Rol,
                             fotoPerfil = string.IsNullOrEmpty(u.FotoPerfil)
                                 ? null
-                                : $"http://localhost:5155/uploads/{u.FotoPerfil}"
+                                : $"https://TU_DOMINIO/uploads/{u.FotoPerfil}" // 🔁 cambia esto por tu dominio
                         });
                     }
                 }
@@ -181,6 +182,5 @@ public IActionResult TestConnection()
                 return BadRequest(new { mensaje = "Error al eliminar la foto", error = ex.Message });
             }
         }
-
     }
 }
