@@ -8,7 +8,6 @@ namespace WebProyectoAPI.Modelo
 
         public Conexion()
         {
-            // ✅ Toma la cadena del entorno
             string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
 
             if (string.IsNullOrEmpty(cadena))
