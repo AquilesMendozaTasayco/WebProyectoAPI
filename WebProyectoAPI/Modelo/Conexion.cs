@@ -1,4 +1,4 @@
-﻿using MySql.Data.MySqlClient;
+using MySql.Data.MySqlClient;
 
 namespace WebProyectoAPI.Modelo
 {
@@ -6,7 +6,7 @@ namespace WebProyectoAPI.Modelo
     {
         protected MySqlConnection _cnx = null;
 
-        string cadena = "server=localhost;port=3306;database=gestorProyectoBD;user=root;password=;";
+        string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
 
         public Conexion()
         {
