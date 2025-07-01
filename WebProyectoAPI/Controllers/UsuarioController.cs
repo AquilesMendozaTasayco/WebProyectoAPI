@@ -22,24 +22,24 @@ namespace WebProyectoAPI.Controllers
         }
 
         // ✅ Test de conexión a Railway
-        [HttpGet("test-connection")]
-        public IActionResult TestConnection()
-        {
-            try
-            {
-                string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+[HttpGet("test-connection")]
+public IActionResult TestConnection()
+{
+    try
+    {
+        string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
 
-                using (var cnx = new MySqlConnection(cadena))
-                {
-                    cnx.Open();
-                    return Ok("✅ Conexión a Railway MySQL exitosa.");
-                }
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"❌ Error al conectar: {ex.Message}");
-            }
-        }
+        if (string.IsNullOrEmpty(cadena))
+            return BadRequest("❌ No se encontró la variable CONNECTION_STRING.");
+
+        return Ok($"Cadena que estoy usando:\n{cadena}");
+    }
+    catch (Exception ex)
+    {
+        return BadRequest($"❌ Error al conectar: {ex.Message}");
+    }
+}
+
 
         [HttpGet("BuscarUsuarios")]
         public IActionResult BuscarUsuarios([FromQuery] string filtro)
