@@ -8,8 +8,10 @@ namespace WebProyectoAPI.Modelo
 
         public Conexion()
         {
-            // Aquí lee del entorno
             string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+            if (string.IsNullOrEmpty(cadena))
+                throw new Exception("La variable CONNECTION_STRING está vacía.");
 
             _cnx = new MySqlConnection(cadena);
         }
