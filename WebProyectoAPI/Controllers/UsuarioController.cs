@@ -11,7 +11,7 @@ using WebProyectoAPI.Modelo;
 namespace WebProyectoAPI.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] // ✅ Ruta clara: /api/usuario
+    [Route("[controller]")] // ✅ Ruta clara: /api/usuario
     public class UsuarioController : ControllerBase
     {
         // Modelo para cambiar contraseña
