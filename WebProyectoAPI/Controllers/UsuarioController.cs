@@ -20,6 +20,25 @@ namespace WebProyectoAPI.Controllers
             public int IdUsuario { get; set; }
             public string NuevaClave { get; set; } = "";
         }
+[HttpGet("test-connection")]
+public IActionResult TestConnection()
+{
+    try
+    {
+        // Lee la cadena de conexión desde la variable de entorno
+        string cadena = Environment.GetEnvironmentVariable("CONNECTION_STRING");
+
+        using (var cnx = new MySqlConnection(cadena))
+        {
+            cnx.Open();
+            return Ok("✅ Conexión a Railway MySQL exitosa.");
+        }
+    }
+    catch (Exception ex)
+    {
+        return BadRequest($"❌ Error al conectar: {ex.Message}");
+    }
+}
 
         [HttpGet("BuscarUsuarios")]
         public IActionResult BuscarUsuarios([FromQuery] string filtro)
