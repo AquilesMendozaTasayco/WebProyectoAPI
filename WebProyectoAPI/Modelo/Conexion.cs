@@ -1,5 +1,4 @@
 using MySql.Data.MySqlClient;
-using System;
 
 namespace WebProyectoAPI.Modelo
 {
@@ -7,20 +6,10 @@ namespace WebProyectoAPI.Modelo
     {
         protected MySqlConnection _cnx = null;
 
+        string cadena = "server=turntable.proxy.rlwy.net;port=42741;database=railway;user=root;password=DblCzMgeLDTsNnjQCpkJuLtMJizUwmvL;";
+
         public Conexion()
         {
-            string url = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-
-            // Convierte la URL a una cadena de conexión
-            var uri = new Uri(url);
-            string server = uri.Host;
-            int port = uri.Port;
-            string database = uri.AbsolutePath.TrimStart('/');
-            string user = uri.UserInfo.Split(':')[0];
-            string password = uri.UserInfo.Split(':')[1];
-
-            string cadena = $"Server={server};Port={port};Database={database};Uid={user};Pwd={password};";
-
             _cnx = new MySqlConnection(cadena);
         }
     }
